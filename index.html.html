@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chondaen X-ray Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#04142f;--panel:#071f49;--cyan:#19e5ff;--blue:#3996ff;--pink:#ff4ccf;--green:#20f5bd;--gold:#ffd65a;--text:#effaff;--muted:#9cc6ed}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#0a3c83 0,#04142f 55%,#020b1b 100%);color:var(--text);font-family:Tahoma,"Noto Sans Thai",sans-serif;min-height:100vh}
+header{padding:22px 4vw 16px;border-bottom:1px solid #1de7ff70;display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;box-shadow:0 8px 35px #00bfff20}
+.brand h1{font-size:clamp(28px,4vw,48px);margin:0;color:#fff;text-shadow:0 0 12px #18bfff,0 0 28px #087cff;letter-spacing:.5px}.brand p{margin:6px 0 0;color:#8ceeff;font-size:15px}
+.controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.controls label{color:#aeeeff;font-size:13px}.controls input,.controls button,.formrow input,.formrow select,.formrow textarea{background:#061a3b;color:#fff;border:1px solid #28cfff;border-radius:10px;padding:10px 12px;font:inherit;outline:none}.controls button,.primary{cursor:pointer;background:linear-gradient(135deg,#087dff,#12d6ef);border:0;color:#00172c;font-weight:bold;box-shadow:0 0 14px #00cfff55}.controls button:hover,.primary:hover{filter:brightness(1.15)}
+main{padding:22px 4vw 40px;max-width:1600px;margin:auto}.summary{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:14px;margin-bottom:20px}.stat,.panel{background:linear-gradient(145deg,#0b2a5aee,#061735f5);border:1px solid #16cfff90;border-radius:18px;box-shadow:0 0 18px #00aaff20,inset 0 0 18px #087dff10}.stat{padding:17px 19px;position:relative;overflow:hidden}.stat:after{content:"";position:absolute;width:90px;height:90px;right:-20px;top:-25px;border-radius:50%;background:#16cfff18;filter:blur(2px)}.stat .label{color:var(--muted);font-size:14px}.stat .value{font-size:34px;font-weight:800;margin-top:7px;text-shadow:0 0 12px #00bfff80}.stat:nth-child(2){border-color:var(--pink)}.stat:nth-child(3){border-color:var(--green)}.stat:nth-child(4){border-color:var(--gold)}
+.layout{display:grid;grid-template-columns:1.15fr .85fr;gap:18px}.panel{padding:18px;margin-bottom:18px}.panel h2{margin:0 0 14px;font-size:21px;color:#a9f5ff;text-shadow:0 0 10px #00aaff66}.sub{font-size:12px;color:#8fb9e7;margin-top:-8px;margin-bottom:14px}
+table{width:100%;border-collapse:separate;border-spacing:0 8px}th{text-align:left;font-size:13px;color:#a4d9ff;font-weight:600;padding:5px 10px}td{padding:10px;background:#0a2a56;border-top:1px solid #207dba70;border-bottom:1px solid #207dba70}td:first-child{border-left:1px solid #207dba70;border-radius:10px 0 0 10px}td:last-child{border-right:1px solid #207dba70;border-radius:0 10px 10px 0}.dept-name{font-weight:700}.num-input{width:100%;max-width:125px;background:#041a3c;color:#fff;border:1px solid #20cfff;border-radius:8px;padding:9px;font-size:16px;text-align:center}.smallbtn{border:1px solid #ff6bcf;color:#ffd6f4;background:#4a1550;border-radius:8px;padding:7px 10px;cursor:pointer}.formrow{display:grid;grid-template-columns:1fr 1fr;gap:12px}.formrow label{display:block;color:#9ac9ef;font-size:13px;margin-bottom:6px}.formrow input,.formrow select,.formrow textarea{width:100%}.formrow .full{grid-column:1/-1}.portable-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.portable-card{padding:13px;border-radius:14px;border:1px solid #18dfffa0;background:linear-gradient(140deg,#0a3974,#081a3d);box-shadow:inset 0 0 15px #00cfff15}.portable-card:nth-child(2){border-color:#20f5bd}.portable-card:nth-child(3){border-color:#ff4ccf}.portable-card:nth-child(4){border-color:#ffd65a}.portable-card:nth-child(5){border-color:#9b7bff}.portable-card label{display:block;font-weight:bold;margin-bottom:9px}.portable-card input{width:100%;padding:10px;border-radius:9px;background:#03142e;color:white;border:1px solid #39cfff;font-size:20px;font-weight:bold}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}.actions button{padding:10px 14px;border-radius:10px}.secondary{background:#0a2853;color:#c7edff;border:1px solid #38bfff;cursor:pointer}.danger{background:#481a35;color:#ffd4e9;border:1px solid #ff6bb7;cursor:pointer}
+.chartbox{height:230px;display:flex;align-items:end;gap:12px;padding:18px 5px 3px;border-bottom:1px solid #2b75a8}.barwrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:end;height:100%;gap:7px;min-width:0}.bar{width:min(46px,75%);min-height:3px;border-radius:8px 8px 2px 2px;background:linear-gradient(0deg,#087cff,#1ceaff);box-shadow:0 0 12px #00cfff65;transition:height .3s}.barval{font-size:12px;color:#b8efff}.barlabel{font-size:11px;color:#9dc9ee;text-align:center;white-space:normal}
+.loglist{max-height:200px;overflow:auto}.logitem{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid #1c5680;color:#b9ddf7;font-size:13px}.empty{color:#8ab4d8;text-align:center;padding:18px}
+footer{text-align:center;color:#6faedb;font-size:12px;padding:8px}
+@media(max-width:900px){.layout{grid-template-columns:1fr}.summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){header{padding:18px}.summary{grid-template-columns:1fr 1fr;gap:9px}.stat{padding:13px}.stat .value{font-size:26px}.panel{padding:13px}.formrow{grid-template-columns:1fr}.formrow .full{grid-column:auto}th,td{padding:8px 6px}.dept-name{font-size:13px}.num-input{max-width:85px;padding:8px 3px}}
+</style>
+</head>
+<body>
+<header>
+ <div class="brand"><h1>Chondaen <span style="color:#ffd65a">X-ray</span></h1><p>ภาพรังสี เพื่อการวินิจฉัยที่แม่นยำ • โรงพยาบาลชนแดน</p></div>
+ <div class="controls"><label for="reportDate">วันที่รายงาน</label><input type="date" id="reportDate"><button id="todayBtn">วันนี้</button><label for="excelFile" class="primary" style="padding:10px 12px;border-radius:10px;cursor:pointer">นำเข้า Excel</label><input type="file" id="excelFile" accept=".xls,.xlsx,.csv" style="display:none"><button id="exportBtn">ส่งออก CSV</button></div>
+</header>
+<main>
+ <section class="summary">
+  <div class="stat"><div class="label">ผู้รับบริการทั้งหมด</div><div class="value" id="total">0</div></div>
+  <div class="stat"><div class="label">หน่วยงานที่บันทึกข้อมูล</div><div class="value" id="filled">0/7</div></div>
+  <div class="stat"><div class="label">ผู้ป่วย Portable</div><div class="value" id="portableTotal">0</div></div>
+  <div class="stat"><div class="label">รายการเอกซเรย์</div><div class="value" id="portableTypes">0</div></div>
+ </section>
+ <div class="layout">
+  <div>
+   <section class="panel">
+    <h2>▦ จำนวนผู้รับบริการแยกตามหน่วยงาน</h2><div class="sub">กรอกเองหรือกด “นำเข้า Excel” เพื่ออ่านรายงานเอกซเรย์ ระบบจะคำนวณยอดจากไฟล์ตามวันที่เลือก</div><div id="importStatus" class="sub" role="status">ยังไม่ได้เลือกไฟล์ Excel</div>
+    <table><thead><tr><th>หน่วยงาน</th><th>จำนวน (ราย)</th><th></th></tr></thead><tbody id="deptRows"></tbody></table>
+    <div class="actions"><button class="secondary" id="clearDay">ล้างข้อมูลวันนี้</button><button class="secondary" id="printBtn">พิมพ์รายงาน</button></div>
+   </section>
+   <section class="panel">
+    <h2>▤ แนวโน้มปริมาณงานรายหน่วยงาน</h2><div class="sub">กราฟจากข้อมูลวันที่เลือก</div><div class="chartbox" id="chart"></div>
+   </section>
+  </div>
+  <div>
+   <section class="panel">
+    <h2>✦ รายการเอกซเรย์</h2><div class="sub">กรอกจำนวนตามประเภทการตรวจ</div>
+    <div class="portable-grid" id="portableGrid"></div>
+    <div class="formrow" style="margin-top:14px"><div class="full"><label for="portablePatients">จำนวนผู้ป่วย Portable (ราย)</label><input type="number" min="0" step="1" id="portablePatients" placeholder="0"></div></div>
+   </section>
+   <section class="panel">
+    <h2>◷ ผู้ขึ้นเวรนอกเวลาประจำวันนี้</h2>
+    <div class="formrow">
+     <div><label for="oncall">ผู้ปฏิบัติงานคนที่ 1</label><input id="oncall" type="text" placeholder="ชื่อ-นามสกุลคนที่ 1"></div>
+     <div><label for="oncall2">ผู้ปฏิบัติงานคนที่ 2</label><input id="oncall2" type="text" placeholder="ชื่อ-นามสกุลคนที่ 2"></div>
+     <div><label for="shift">เวร</label><select id="shift"><option>เวรบ่าย</option><option>เวรดึก</option><option>เวรวันหยุด</option><option>อื่น ๆ</option></select></div>
+     <div><label for="phone">เบอร์ติดต่อภายใน (ถ้ามี)</label><input id="phone" type="text" placeholder="เบอร์ภายใน"></div>
+     <div class="full"><label for="notes">หมายเหตุ</label><textarea id="notes" rows="2" placeholder="ระบุหมายเหตุเพิ่มเติม"></textarea></div>
+    </div>
+    <div class="actions"><button class="primary" id="saveOncall">บันทึกเวร</button></div>
+    <div class="loglist" id="oncallList"></div>
+   </section>
+   <section class="panel"><h2>▣ ประวัติข้อมูลวันที่เลือก</h2><div class="sub">รายการที่มีข้อมูลถูกบันทึกไว้ในเครื่องนี้</div><div id="history" class="loglist"></div></section>
+  </div>
+ </div>
+ <footer>Chondaen X-ray Dashboard • ข้อมูลจัดเก็บในเบราว์เซอร์ของเครื่องนี้ • สำรองข้อมูลด้วยการส่งออก CSV</footer>
+</main>
+<script>
+const departments=["OPD","ห้องฉุกเฉิน (ER)","คลินิกจิตเวช","คลินิกดอกลำดวน","ตึกผู้ป่วยในชาย","ตึกผู้ป่วยในหญิง","ห้องคลอด"];
+const portableTypes=["Chest","Lower Extremity","Upper Extremity","SPINe","KUB/Abdomen"];
+const $=id=>document.getElementById(id);
+const today=()=>{let d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
+const keyFor=date=>"chondaen_xray_"+date;
+let current={departments:{},portable:{},portablePatients:0,oncall:[]};
+function blank(){return {departments:{},portable:{},portablePatients:0,oncall:[]}}
+function load(date){try{current=JSON.parse(localStorage.getItem(keyFor(date)))||blank()}catch(e){current=blank()}current.departments ||= {};current.portable ||= {};current.oncall ||= [];current.portablePatients ||= 0;renderAll()}
+function save(){localStorage.setItem(keyFor($("reportDate").value),JSON.stringify(current));updateSummary();renderChart();renderHistory()}
+function safeNum(v){return Math.max(0,Math.floor(Number(v)||0))}
+function renderRows(){$("deptRows").innerHTML=departments.map((d,i)=>`<tr><td class="dept-name">${d}</td><td><input aria-label="จำนวน ${d}" class="num-input" type="number" min="0" step="1" value="${current.departments[d]??''}" placeholder="0" data-dept="${d}"></td><td><button class="smallbtn" data-clear="${d}">ล้าง</button></td></tr>`).join('');
+document.querySelectorAll('[data-dept]').forEach(el=>el.addEventListener('input',()=>{current.departments[el.dataset.dept]=safeNum(el.value);save()}));
+document.querySelectorAll('[data-clear]').forEach(el=>el.addEventListener('click',()=>{delete current.departments[el.dataset.clear];save();renderRows()}))}
+function renderPortable(){$("portableGrid").innerHTML=portableTypes.map(t=>`<div class="portable-card"><label>${t}</label><input type="number" min="0" step="1" aria-label="${t}" data-portable="${t}" value="${current.portable[t]??''}" placeholder="0"></div>`).join('');
+document.querySelectorAll('[data-portable]').forEach(el=>el.addEventListener('input',()=>{current.portable[el.dataset.portable]=safeNum(el.value);save()}));
+$("portablePatients").value=current.portablePatients||''}
+function updateSummary(){const vals=Object.values(current.departments).map(safeNum);$("total").textContent=vals.reduce((a,b)=>a+b,0).toLocaleString('th-TH');$("filled").textContent=departments.filter(d=>current.departments[d]!==undefined&&current.departments[d]!=='' ).length+"/7";$("portableTotal").textContent=safeNum(current.portablePatients).toLocaleString('th-TH');$("portableTypes").textContent=portableTypes.reduce((a,t)=>a+safeNum(current.portable[t]),0).toLocaleString('th-TH')}
+function renderChart(){let vals=departments.map(d=>safeNum(current.departments[d]));let max=Math.max(1,...vals);$("chart").innerHTML=departments.map((d,i)=>`<div class="barwrap"><div class="barval">${vals[i]}</div><div class="bar" style="height:${Math.max(3,vals[i]/max*145)}px" title="${d}: ${vals[i]}"></div><div class="barlabel">${d.replace("ห้องฉุกเฉิน (ER)","ER").replace("ตึกผู้ป่วยใน","ตึก").replace("คลินิก","คลินิก")}</div></div>`).join('')}
+function renderOncall(){$("oncallList").innerHTML=current.oncall.length?current.oncall.map((o,i)=>`<div class="logitem"><span><b>${escapeHtml(o.name||"ไม่ระบุชื่อ")}</b> — ${escapeHtml(o.shift)}${o.phone?" · "+escapeHtml(o.phone):""}${o.notes?"<br>"+escapeHtml(o.notes):""}</span><button class="smallbtn" data-del-oncall="${i}">ลบ</button></div>`).join(''):'<div class="empty">ยังไม่มีรายชื่อเวรที่บันทึก</div>';document.querySelectorAll('[data-del-oncall]').forEach(b=>b.onclick=()=>{current.oncall.splice(+b.dataset.delOncall,1);save();renderOncall()})}
+function renderHistory(){let all=[];for(let i=0;i<localStorage.length;i++){let k=localStorage.key(i);if(k&&k.startsWith("chondaen_xray_")){try{let d=JSON.parse(localStorage.getItem(k));let total=Object.values(d.departments||{}).reduce((a,b)=>a+safeNum(b),0);all.push({date:k.replace("chondaen_xray_",""),total})}catch(e){}}}all.sort((a,b)=>b.date.localeCompare(a.date));$("history").innerHTML=all.length?all.slice(0,10).map(x=>`<div class="logitem"><span>${x.date}</span><b>${x.total.toLocaleString('th-TH')} ราย</b></div>`).join(''):'<div class="empty">ยังไม่มีประวัติข้อมูล</div>'}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function renderAll(){renderRows();renderPortable();$("oncall").value="";$("oncall2").value="";$("phone").value="";$("notes").value="";renderOncall();updateSummary();renderChart();renderHistory()}
+$("reportDate").value=today();load(today());
+$("reportDate").addEventListener('change',()=>load($("reportDate").value||today()));
+$("todayBtn").onclick=()=>{$("reportDate").value=today();load(today())};
+$("portablePatients").addEventListener('input',()=>{current.portablePatients=safeNum($("portablePatients").value);save()});
+$("saveOncall").onclick=()=>{const name1=$("oncall").value.trim(),name2=$("oncall2").value.trim();if(!name1&&!name2){alert("กรุณากรอกชื่อผู้ปฏิบัติงานอย่างน้อย 1 คน");return}const entry={shift:$("shift").value,phone:$("phone").value.trim(),notes:$("notes").value.trim()};if(name1)current.oncall.push({...entry,name:name1,person:1});if(name2)current.oncall.push({...entry,name:name2,person:2});save();renderOncall();$("oncall").value="";$("oncall2").value="";$("phone").value="";$("notes").value=""};
+$("clearDay").onclick=()=>{if(confirm("ต้องการล้างข้อมูลของวันที่ "+$("reportDate").value+" ใช่หรือไม่?")){current=blank();save();renderAll()}};
+$("printBtn").onclick=()=>window.print();
+
+function norm(v){return String(v??"").replace(/^['"]|['"]$/g,"").trim().toLowerCase()}
+function parseExcelDate(v){
+ if(v instanceof Date && !isNaN(v)) return `${v.getFullYear()}-${String(v.getMonth()+1).padStart(2,'0')}-${String(v.getDate()).padStart(2,'0')}`;
+ if(typeof v==="number" && window.XLSX){const d=XLSX.SSF.parse_date_code(v);if(d)return `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`}
+ const s=String(v??"").trim();if(!s)return "";
+ const d=new Date(s);if(!isNaN(d))return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+ const m=s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})/);if(m){let y=+m[3];if(y>2400)y-=543;return `${y}-${String(+m[2]).padStart(2,'0')}-${String(+m[1]).padStart(2,'0')}`}
+ return "";
+}
+function classifyDepartment(row){
+ const source=norm(row["สั่งจากห้อง"]), dept=norm(row["ชื่อแผนก"]), section=norm(row["แผนก"]);
+ if(source.includes("ฉุกเฉิน")||source==="er")return "ห้องฉุกเฉิน (ER)";
+ if(source.includes("ดอกลำดวน"))return "คลินิกดอกลำดวน";
+ if(source.includes("จิตเวช")||dept.includes("จิตเวช"))return "คลินิกจิตเวช";
+ if(dept.includes("ตึกชาย")||dept.includes("ชาย")&&section==="ipd")return "ตึกผู้ป่วยในชาย";
+ if(dept.includes("ตึกหญิง")||dept.includes("หญิง")&&section==="ipd")return "ตึกผู้ป่วยในหญิง";
+ if(source.includes("ห้องคลอด")||dept.includes("ห้องคลอด")||dept.includes("คลอด"))return "ห้องคลอด";
+ // OPD sources not mapped to a named clinic are grouped as OPD.
+ if(section==="ipd")return dept.includes("ชาย")?"ตึกผู้ป่วยในชาย":dept.includes("หญิง")?"ตึกผู้ป่วยในหญิง":"OPD";
+ return "OPD";
+}
+function classifyPortable(row){
+ const request=String(row["รายการที่สั่ง"]??"").toUpperCase();
+ return /CXR\s*PORTABLE|PORTABLE\s*X[- ]?RAY/.test(request);
+}
+function countExamItems(request){
+ return String(request??"").split(",").map(s=>s.trim()).filter(s=>s && !/^(EXPORT REFER|WRITE CD|USING NON-IONIC|CONTRAST|REFER TO)/i.test(s)).length;
+}
+$("excelFile").addEventListener("change", async ev=>{
+ const file=ev.target.files?.[0]; if(!file)return;
+ if(!window.XLSX){$("importStatus").textContent="ไม่สามารถโหลดตัวอ่าน Excel ได้ กรุณาเชื่อมต่ออินเทอร์เน็ตแล้วเปิดไฟล์ใหม่";return}
+ try{
+  const buf=await file.arrayBuffer();
+  const wb=XLSX.read(buf,{type:"array",cellDates:true});
+  const ws=wb.Sheets[wb.SheetNames[0]];
+  const rows=XLSX.utils.sheet_to_json(ws,{defval:""});
+  if(!rows.length)throw new Error("ไม่พบข้อมูลในแผ่นงานแรก");
+  const headers=Object.keys(rows[0]);
+  const dateCol=headers.find(h=>norm(h)==="วันที่");
+  const requestCol=headers.find(h=>norm(h)==="รายการที่สั่ง");
+  if(!dateCol||!requestCol)throw new Error("ไม่พบคอลัมน์ “วันที่” หรือ “รายการที่สั่ง” ในไฟล์");
+  const selected=$("reportDate").value;
+  const filtered=rows.filter(r=>parseExcelDate(r[dateCol])===selected);
+  if(!filtered.length){$("importStatus").textContent=`นำเข้าไฟล์แล้ว แต่ไม่พบรายการวันที่ ${selected} (พบข้อมูลทั้งหมด ${rows.length} แถว)`;return}
+  // Import replaces computed department and portable counts for the selected date.
+  const depCounts=Object.fromEntries(departments.map(d=>[d,0]));
+  let portablePatients=0, portableExams=0;
+  const typeCounts=Object.fromEntries(portableTypes.map(t=>[t,0]));
+  filtered.forEach(r=>{
+   const department=classifyDepartment(r);
+   depCounts[department]=(depCounts[department]||0)+1;
+   const req=String(r[requestCol]??"");
+   if(classifyPortable(r)){portablePatients++;portableExams+=countExamItems(req)}
+   const upper=req.toUpperCase();
+   const tokens=upper.split(",").map(x=>x.trim());
+   tokens.forEach(t=>{
+    if(/^CHEST PA$|^CHEST AP$|^CXR\b/.test(t))typeCounts["Chest"]++;
+    if(/^(LEG|FEMUR|TIBIA|FIBULA|KNEE|ANKLE|FOOT|TOE|HIP|PELVIS|FOOT|CALCANEUS|LOWER EXTREMITY)\b/.test(t))typeCounts["Lower Extremity"]++;
+    if(/^(FOREARM|WRIST|HAND|FINGER|HUMERUS|ELBOW|SHOULDER|CLAVICLE|UPPER EXTREMITY)\b/.test(t))typeCounts["Upper Extremity"]++;
+    if(/SPINE|C-SPINE|CERVICAL|T-SPINE|THORACIC|L-S SPINE|LUMBAR/.test(t))typeCounts["SPINe"]++;
+    if(/^KUB\b|^ABDOMEN\b/.test(t))typeCounts["KUB/Abdomen"]++;
+   });
+  });
+  current.departments=depCounts;current.portable=typeCounts;current.portablePatients=portablePatients;
+  save();renderAll();
+  $("importStatus").textContent=`นำเข้าสำเร็จ: ${file.name} • วันที่ ${selected} • ${filtered.length} รายการในไฟล์ • Portable ${portablePatients} ราย`;
+ }catch(err){$("importStatus").textContent="นำเข้าไม่สำเร็จ: "+err.message}
+ ev.target.value="";
+});
+
+$("exportBtn").onclick=()=>{const rows=[["วันที่",$("reportDate").value],["หน่วยงาน","จำนวนผู้รับบริการ"],...departments.map(d=>[d,safeNum(current.departments[d])]),["จำนวนผู้ป่วย Portable",safeNum(current.portablePatients)],["รายการเอกซเรย์","จำนวน"],...portableTypes.map(t=>[t,safeNum(current.portable[t])]),["ผู้ขึ้นเวร","เวร","เบอร์ติดต่อ","หมายเหตุ"],...current.oncall.map(o=>[o.name,o.shift,o.phone,o.notes])];const csv="\uFEFF"+rows.map(r=>r.map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(",")).join("\r\n");const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="Chondaen_Xray_"+$("reportDate").value+".csv";a.click();URL.revokeObjectURL(a.href)};
+</script>
+</body></html>
